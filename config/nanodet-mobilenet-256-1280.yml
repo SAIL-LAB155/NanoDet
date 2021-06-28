@@ -1,0 +1,99 @@
+#Config File example
+save_dir: workspace/256-1280
+model:
+  arch:
+    name: GFL
+    backbone:
+      name: MobileNetV2
+      width_mult: 1.0
+      out_stages: [2,5,6]
+    fpn:
+      name: PAN
+      in_channels: [32,160,1280]
+      out_channels: 1280
+      start_level: 0
+      num_outs: 3
+    head:
+      name: NanoDetHead
+      num_classes: 1
+      input_channel: 1280
+      feat_channels: 1280
+      stacked_convs: 2
+      share_cls_reg: True
+      octave_base_scale: 5
+      scales_per_octave: 1
+      strides: [8, 16, 32]
+      reg_max: 7
+      norm_cfg:
+        type: BN
+      loss:
+        loss_qfl:
+          name: QualityFocalLoss
+          use_sigmoid: True
+          beta: 2.0
+          loss_weight: 1.0
+        loss_dfl:
+          name: DistributionFocalLoss
+          loss_weight: 0.25
+        loss_bbox:
+          name: GIoULoss
+          loss_weight: 2.0
+data:
+  train:
+    name: coco
+    img_path: ../data/yoga_coco/images/train2017
+    ann_path: ../data/yoga_coco/annotations/instances_train2017.json
+    input_size: [416,416] #[w,h]
+    keep_ratio: True
+    pipeline:
+      perspective: 0.0
+      scale: [0.6, 1.4]
+      stretch: [[1, 1], [1, 1]]
+      rotation: 0
+      shear: 0
+      translate: 0.2
+      flip: 0.5
+      brightness: 0.2
+      contrast: [0.8, 1.2]
+      saturation: [0.8, 1.2]
+      normalize: [[103.53, 116.28, 123.675], [57.375, 57.12, 58.395]]
+  val:
+    name: coco
+    img_path: ../data/yoga_coco/images/val2017
+    ann_path: ../data/yoga_coco/annotations/instances_val2017.json
+    input_size: [416,416] #[w,h]
+    keep_ratio: True
+    pipeline:
+      normalize: [[103.53, 116.28, 123.675], [57.375, 57.12, 58.395]]
+device:
+  gpu_ids: [0]
+  workers_per_gpu: 4
+  batchsize_per_gpu: 10
+schedule:
+#  resume:
+#  load_model: YOUR_MODEL_PATH
+  optimizer:
+    name: SGD
+    lr: 0.10
+    momentum: 0.9
+    weight_decay: 0.0001
+  warmup:
+    name: linear
+    steps: 300
+    ratio: 0.14
+  total_epochs: 70
+  lr_schedule:
+    name: MultiStepLR
+    milestones: [40,60]
+    gamma: 0.1
+  val_intervals: 5
+#  load_model : '/media/hkuit164/TOSHIBA/nanodet/tools/workspace/nanodet_m/model_best/model_best.pth'
+#  load_model : '/media/hkuit164/TOSHIBA/nanodet/nanodet_m.pth'
+evaluator:
+  name: CocoDetectionEvaluator
+  save_key: mAP
+
+log:
+  interval: 5
+
+class_names: ['person',]
